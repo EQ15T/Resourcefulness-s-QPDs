@@ -1,0 +1,4 @@
+# This file lists the Python dependencies required for the project.
+
+numpy
+re
