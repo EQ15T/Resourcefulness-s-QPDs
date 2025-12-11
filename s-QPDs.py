@@ -9,6 +9,7 @@ _RE_R = re.compile(rf'R([+-]?{_REAL}),({_NAT})')
 _RE_C = re.compile(rf'C([+-]?{_REAL}),({_NAT})')   # C: real, nat
 _RE_L = re.compile(rf'L([+-]?{_REAL}),({_NAT})')   # L: real, nat
 _RE_B = re.compile(rf'B([+-]?{_REAL}),({_NAT}),({_NAT})')
+_RE_N = re.compile(rf'N([+-]?{_REAL}),({_NAT})')   # N: real, nat
 
 def _to_real(s: str) -> float:
     try:
@@ -87,13 +88,12 @@ def s_beamsplitter(s_in1, s_in2, theta):
     """Return the best output ordering parameter for the Beam-splitter given s_in, and the BS angle theta"""
     return float(min(s_in1, s_in2))
 
-def s_cubic(s_in, gamma):
-    """Return the best output ordering parameter for the Cubic phase gate given s_in, and the cubicity gamma"""
-    if s_in ==1 : 
-        return -1 #In the case of a 
+def s_nongaussian(s_in, gate_param):
+    """Return the best output ordering parameter for a generic non-Gaussian gate given s_in"""
+    if s_in == -1:
+        return float(-1)
     else:
-        return -100 #
-
+        return -100000 #Impossible, alsways negative for any point in the s-parameter space other than (-1,-1)
 # Process 
 def process_list(s_in, circuit):
     """Process the list of quantum of operations to find the optimal ordering parameters."""
@@ -107,8 +107,8 @@ def process_list(s_in, circuit):
             s_in[item[2]] = s_losses(s_in[item[2]], item[1])
             if not (-1 <= s_in[item[2]] <= 1):
                 raise ValueError(f"The value of the ordering parameter s is outside [-1,1] after the application of gate 'L' on mode {item[2]} (gate number {index}). At this step, s={s_in}. A positive decomposition cannot be found this way.")
-        elif item[0] == 'C':
-            result = s_cubic(s_in[item[2]], item[1])
+        elif item[0] == 'C' or item[0] == 'N':
+            result = s_nongaussian(s_in[item[2]], item[1])
             if result is not None:
                 s_in[item[2]] = result
                 if not (-1 <= s_in[item[2]] <= 1):
@@ -166,7 +166,7 @@ while True:
     except ValueError:
         print("Error: Please input valid numbers separated by commas.")
 
-# Compare the user's parameters with the result
+# Compare the user's measurement parameters with the output parameters
 all_less = True
 for i, (user_param, result_param) in enumerate(zip(user_params, result)):
     if user_param >= result_param:
